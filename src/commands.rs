@@ -10,6 +10,15 @@ pub fn add_grocery(list: &mut Vec<Groceries>, next_id: &mut u32, name: String, p
     *next_id += 1;
 }
 
+pub fn remove_grocery(list: &mut Vec<Groceries>, id: u32) {
+    if let Some(pos) = list.iter().position(|g| g.id == id) {
+        let removed_item = list.remove(pos);
+        println!("{} ({}$) has been removed from the list!", removed_item.name, removed_item.price);
+    } else {
+        println!("Item with ID {} not found.", id);
+    }
+}
+
 pub fn list_groceries(list: &Vec<Groceries>) {
     for item in list {
         println!("{} | {} | {}$", item.id, item.name, item.price);
@@ -35,7 +44,7 @@ pub fn show_budget(budget: &Option<f32>, spendings: f32) {
     }
 }
 
-pub fn add_budget(budget: &mut Option<f32>, amount: f32) {
+pub fn update_budget(budget: &mut Option<f32>, amount: f32) {
     match budget {
         Some(current_budget) => {
             *current_budget += amount;
