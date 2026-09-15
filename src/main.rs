@@ -1,88 +1,90 @@
 use std::io::{self, Write};
+use std::env;
 
-struct Groceries {
-    id: u32,
-    name: String,
-    price: f32,
-}
+mod commands;
+mod templates;
+mod storage;
+
+use templates::Groceries;
+use storage::{save_groceries, load_groceries};
 
 fn main() {
-    let mut list: Vec<Groceries> = Vec::new();
+    let args: Vec<String> = env::args().collect();
+
+    if args.len() < 2 {
+        println!("Usage: studget <command> [args]");
+        return;
+    }
+
+    let command = args[1].as_str();
+
+    let mut list: Vec<Groceries> = load_groceries();
     
     let mut next_id: u32 = 0;
     
     let mut budget: Option<f32> = None;
+    let mut spendings: f32 = 0.0;
     
-    loop {
-        println!("Hello, what do you want to do?");
-        print!("(a)dd, (d)elete, (b)udget, (q)uit -> ");
-        io::stdout().flush().unwrap();
-        
-        let mut input = String::new();
-        io::stdin().read_line(&mut input).expect("error");
-        print!("{}", input);
-        
-        match input.trim() {
-            "a" => {
-                print!("Enter name: ");
-                io::stdout().flush().unwrap();
-                
-                let mut name = String::new();
-                io::stdin().read_line(&mut name).expect("error"); // collects name
-                println!("{}", name.trim());
-                
-                print!("How much?: ");
-                io::stdout().flush().unwrap();
-                
-                let mut price_string = String::new(); 
-                io::stdin().read_line(&mut price_string).expect("error");
-                let price: f32 = price_string.trim().parse().expect("not a number");
-                println!("{}", price);
-                
-                list.push(Groceries {
-                    id: next_id,
-                    name: name.trim().to_string(),
-                    price: price,
-                }); // adds the grocery
-                
-                println!("{} ({}$) has been added to the list!", name.trim(), price);
-                next_id += 1;
-            }
-            "l" => {
-                for item in &list {
-                    println!("{} | {} | {}$", item.id, item.name, item.price);
-                }
-            }
-            "b" => {
-                if budget == None {
-                    print!("You haven't set upt your budget yet! Do you want to? (y/n) ");
-                    io::stdout().flush().unwrap();
-                    
-                    let mut input = String::new();
-                    io::stdin().read_line(&mut input).expect("error");
-                    println!("{}", input.trim());
-                    
-                    match input.trim() {
-                        "y" => {
-                            print!("Okay! What's your budget? ");
-                            io::stdout().flush().unwrap();
-                            
-                            let mut input = String::new();
-                            io::stdin().read_line(&mut input).expect("error");
-                            
-                            budget = Some(input.trim().parse::<f32>().expect("error"));
-                        }
-                        "n" => {}
-                        _ => {println!("error")}
+    match command {
+        "add" | "a" => {
+            commands::add_grocery(&mut list, &mut next_id, args[2].clone(), args[3].parse::<f64>().expect("not a number"));
+        }
+        "list" | "l" => {
+            commands::list_groceries(&list);
+        }
+        "budget" | "b" => {
+            match args[2].as_str() {
+                "add" | "a" => {
+                    if args.len() < 4 {
+                        print!("Enter budget: ");
+                        io::stdout().flush().unwrap();
+                        
+                        let mut input = String::new();
+                        io::stdin().read_line(&mut input).expect("error");
+                        
+                        let amount: f32 = input.trim().parse().expect("not a number");
+                        commands::set_budget(&mut budget, &mut spendings, amount);
+                    } else {
+                        let amount: f32 = args[3].parse().expect("not a number");
+                        commands::add_budget(&mut budget, amount);
                     }
                 }
+                _ => {
+                    commands::show_budget(&budget, spendings);
+                }
             }
-            "q" => {
-                break;
-            }
-            _ => {
-               println!("error");
+
+            if budget == None {
+                
+                
+                /*print!("You haven't set upt your budget yet! Do you want to? (y/n) ");
+                io::stdout().flush().unwrap();
+                
+                let mut input = String::new();
+                io::stdin().read_line(&mut input).expect("error");
+                println!("{}", input.trim());
+                    
+                match input.trim() {
+                    "y" => {
+                        print!("Okay! What's your budget? ");
+                        io::stdout().flush().unwrap();
+                        
+                        let mut input = String::new();
+                        io::stdin().read_line(&mut input).expect("error");
+                        
+                        budget = Some(input.trim().parse::<f32>().expect("error"));
+                    }
+                    "n" => {}
+                    _ => {println!("error")}
+                }*/
+            } else {
+                commands::show_budget(&budget, spendings);
             }
         }
+        _ => {
+           println!("error");
+        }
     }
+
+    save_groceries(&list); 
 }
